@@ -436,3 +436,21 @@ async def test_email(body: dict = {}, _: None = Depends(_require_api_key)) -> di
     if not ok:
         raise HTTPException(status_code=400, detail="Email test failed — check SMTP configuration")
     return {"success": True, "message": "Test email sent ✓", "to": to}
+
+
+# ─── Telegram Webhook ─────────────────────────────────────────────────────────
+
+@app.post("/telegram/webhook", tags=["Telegram"], include_in_schema=False)
+async def telegram_webhook(update: dict) -> dict:
+    """Receive Telegram bot updates via webhook."""
+    from app.services.telegram_bot import build_bot
+    from telegram import Update
+
+    bot_app = build_bot()
+    if not bot_app:
+        return {"ok": False}
+
+    tg_update = Update.de_json(update, bot_app.bot)
+    async with bot_app:
+        await bot_app.process_update(tg_update)
+    return {"ok": True}

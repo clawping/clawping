@@ -7,10 +7,13 @@ import aiosqlite
 
 from app.config import settings
 
-# Ensure data directory exists
-os.makedirs("data", exist_ok=True)
-
-DB_PATH = settings.database_url.replace("sqlite+aiosqlite:///", "")
+# Use /tmp on Railway (writable), fallback to ./data locally
+_raw = settings.database_url.replace("sqlite+aiosqlite:///", "")
+if os.environ.get("RAILWAY_ENVIRONMENT") and _raw.startswith("./"):
+    DB_PATH = _raw.replace("./", "/tmp/")
+else:
+    DB_PATH = _raw
+    os.makedirs(os.path.dirname(DB_PATH) if "/" in DB_PATH else "data", exist_ok=True)
 
 
 async def get_db() -> aiosqlite.Connection:
