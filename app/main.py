@@ -122,6 +122,7 @@ def _uptime() -> str:
 # ─── Health ───────────────────────────────────────────────────────────────────
 
 @app.get("/health", response_model=HealthResponse, tags=["System"])
+@app.head("/health", include_in_schema=False)
 async def health_check() -> HealthResponse:
     """Service health and connectivity status."""
     from app.services.scheduler import scheduler
@@ -135,6 +136,17 @@ async def health_check() -> HealthResponse:
         telegram="configured" if settings.telegram_bot_token else "not configured",
         email="configured" if settings.smtp_user else "not configured",
     )
+
+
+@app.get("/scheduler/run", tags=["System"], include_in_schema=False)
+async def scheduler_run_get() -> dict:
+    """Public GET endpoint for UptimeRobot to keep service alive & trigger scheduler."""
+    from app.services.scheduler import _check_conditions
+    try:
+        await _check_conditions()
+    except Exception:
+        pass
+    return {"ok": True, "triggered": True}
 
 
 # ─── Auth Endpoint ────────────────────────────────────────────────────────────
